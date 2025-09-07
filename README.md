@@ -34,6 +34,9 @@ The pipeline builds the app, packages it into a container, pushes the image to *
 
 5. **Docker Build & Push Stage**  
    - Builds Docker image of the 2048 app.  
+   ```bash
+
+   ```
    - Tags image with both commit SHA and `latest`.  
    - Authenticates to AWS ECR and pushes images.  
 
@@ -59,4 +62,20 @@ The pipeline builds the app, packages it into a container, pushes the image to *
 │ ├── deploy-ecs.sh
 │ └── smoke-test.sh
 └── README.md
+```
+
+
+1. Create a repo in AWS ECR in the aws console
+```bash
+aws ecr create-repository --repository-name 2048-game --region us-east-1
+```
+
+2. Authenticate  Docker with ECR in aws console
+```bash
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com
+```
+
+3. Tag the local docker image
+```bash
+docker tag 2048-game:latest <aws_account_id>.dkr.ecr.ur-east-1.amazonaws/2048-game:latest
 ```

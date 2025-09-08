@@ -13,6 +13,29 @@ pipeline {
                 git 'https://github.com/Rene-Mayhrem/CICD-2048-Mayhrem.git'
             }
         }
+
+        stage('Test AWS CLI') {
+            steps {
+                sh "aws sts get-caller-identity"
+            }
+        }
+
+        stage('Check Tools') {
+            steps {
+                sh """
+                echo '--- Checking Docker ---'
+                docker --version || echo 'Docker not installed'
+
+                echo '--- Checking Terraform ---'
+                terraform --version || echo 'Terraform not installed'
+
+                echo '--- Checking AWS CLI ---'
+                aws --version || echo 'AWS CLI not installed'
+                """
+            }
+        }
+
+
         
         stage('Build Docker Image') {
             steps {
@@ -22,32 +45,32 @@ pipeline {
 
         stage('Authenticate to ECR') {
             steps {
-                sh ```
+                sh """
                     aws ecr get-login-password --region $AWS_REGION \
                         | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-                ```
+                """
             }
         }
 
         stage ('Push Image to ECR') {
             steps {
-                sh ```
+                sh """
                 docker tag $APP_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest
                 docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest   
-                ```
+                """
             }
         }
 
         stage ('Terraform init && Terraform apply') {
             steps {
                 dir('terraform') {
-                    sh ```
+                    sh """
                     terraform init 
                     terraform apply -auto-approve \
                         -var="aws_region=$AWS_REGION" \
                         -var="aws_account_id=$AWS_ACCOUNT_ID" \
                         -var="app_name=$APP_NAME"
-                    ```
+                    """
                 }
             }
         }

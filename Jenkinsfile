@@ -20,11 +20,6 @@ pipeline {
             }
         }
 
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/Rene-Mayhrem/CICD-2048-Mayhrem.git'
-            }
-        }
 
         stage('Test AWS CLI') {
             steps {

@@ -53,3 +53,5 @@ jobs/**/*workspace
 
 !/2048-in-react
 !/Dockerfile
+!/terraform/
+!/Jenkinsfile

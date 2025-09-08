@@ -3,20 +3,20 @@ pipeline {
     environment {
         AWS_ACCOUNT_ID = '864899858037'
         AWS_REGION = 'us-east-1'
-        ECR_REPO = '2048-game'
-        IMAGE_TAG = 'build-${env.BUILD_NUMBER}'
+        APP_NAME = '2048-game'
+        AWS_CREDENTIALS = credentials('aws-creds')
     }
     stages {
 
         stage('Checkout') {
             steps {
-                Checkout scm
+                git 'https://github.com/Rene-Mayhrem/CICD-2048-Mayhrem.git'
             }
         }
         
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t $ECR_REPO:$IMAGE_TAG .'
+                sh 'docker build -t $APP_NAME .'
             }
         }
 
@@ -32,8 +32,8 @@ pipeline {
         stage ('Push Image to ECR') {
             steps {
                 sh ```
-                docker tag 2048-game:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG
-                docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO:$IMAGE_TAG   
+                docker tag $APP_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest
+                docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest   
                 ```
             }
         }
@@ -42,34 +42,23 @@ pipeline {
             steps {
                 dir('terraform') {
                     sh ```
-                    terraform init -input=false
-                    terraform apply -auto-approve -input=false
+                    terraform init 
+                    terraform apply -auto-approve \
+                        -var="aws_region=$AWS_REGION" \
+                        -var="aws_account_id=$AWS_ACCOUNT_ID" \
+                        -var="app_name=$APP_NAME"
                     ```
                 }
             }
         }
 
-        stage('Deploy to ECS') {
-            steps {
-                sh ```
-                aws ecs update-service \
-                    --cluster 2048-cluster \
-                    --service 2048-service \
-                    --force-new-deployment \
-                    --region $AWS_REGION
-                ```
-            }
-        }
 
         stage('Smoke test') {
             steps {
-                script {
-                    def appUrl = "http://2048-game-alb-1234567890.us-east-1.elb.amazonaws.com"
-                    try {
-                        sh "curl -f ${appUrl} || exit 1"
-                        echo "Smoke test passed!"
-                    } catch (err) {
-                        error "Smoke test failed: ${err}"
+                dir('terraform') {
+                    script {
+                        def_alb_dns = sh(script: "terraform output -raw -alb_dns_name", returnStdout: true).trim()
+                        sh "curl -I http://$alb_dns"
                     }
                 }
             }

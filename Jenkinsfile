@@ -1,5 +1,11 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'jenkins-agent-tools'
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
+        }
+    }
+
     environment {
         AWS_ACCOUNT_ID = '864899858037'
         AWS_REGION = 'us-east-1'
@@ -20,13 +26,6 @@ pipeline {
             }
         }
 
-
-        stage('Test AWS CLI') {
-            steps {
-                sh "aws sts get-caller-identity"
-            }
-        }
-
         stage('Check Tools') {
             steps {
                 sh """
@@ -39,6 +38,12 @@ pipeline {
                 echo '--- Checking AWS CLI ---'
                 aws --version || echo 'AWS CLI not installed'
                 """
+            }
+        }
+
+        stage('Test AWS CLI') {
+            steps {
+                sh "aws sts get-caller-identity"
             }
         }
 

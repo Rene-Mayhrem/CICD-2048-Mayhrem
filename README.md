@@ -77,5 +77,18 @@ aws ecr get-login-password --region us-east-1 | docker login --username AWS --pa
 
 3. Tag the local docker image
 ```bash
-docker tag 2048-game:latest <aws_account_id>.dkr.ecr.ur-east-1.amazonaws/2048-game:latest
+docker tag 2048-game:latest <aws_account_id>.dkr.ecr.ur-east-1.amazonaws/2048-game:mdl8thzPE6GCJWhY3YQQAT51jOE6JjZeFdbCrLlulatest
 ```
+
+4. Push the docker image to ECR
+```bash 
+docker push <aws_account_id>.dkr.ecr.us-east-1.amazonaws.com/2048-game:latest
+```
+
+## Jenkins File
+Included stages:
+- Build (docker image)
+- Authenticate to AWS ECR 
+- Push docker image to ECR
+- Deploy to ECS
+- Run smoke tests

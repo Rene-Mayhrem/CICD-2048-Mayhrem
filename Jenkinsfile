@@ -10,6 +10,18 @@ pipeline {
 
         stage('Checkout') {
             steps {
+                git branch: 'main', url: 'https://github.com/Rene-Mayhrem/CICD-2048-Mayhrem.git'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh 'echo "Building project..."'
+            }
+        }
+
+        stage('Checkout') {
+            steps {
                 git 'https://github.com/Rene-Mayhrem/CICD-2048-Mayhrem.git'
             }
         }

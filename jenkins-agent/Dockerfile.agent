@@ -1,12 +1,28 @@
+# Use official Jenkins agent as base
 FROM jenkins/agent:latest
+
 USER root
 
+# Install Docker, AWS CLI, Terraform, and other required tools
 RUN apt-get update && \
-    apt-get install -y docker.io awscli unzip curl gnupg software-properties-common lsb-release apt-transport-https && \
+    apt-get install -y \
+        docker.io \
+        awscli \
+        unzip \
+        curl \
+        gnupg \
+        software-properties-common \
+        lsb-release \
+        apt-transport-https && \
+    # Add HashiCorp repo for Terraform
     curl -fsSL https://apt.releases.hashicorp.com/gpg | gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg && \
     echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" > /etc/apt/sources.list.d/hashicorp.list && \
     apt-get update && \
     apt-get install -y terraform && \
-    groupadd -g 999 docker || true && usermod -aG docker jenkins
+    rm -rf /var/lib/apt/lists/*
 
+# Keep using jenkins user
 USER jenkins
+
+# Verify installation (optional)
+# RUN docker --version && terraform --version && aws --version

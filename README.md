@@ -94,10 +94,17 @@ Included stages:
 - Run smoke tests
 
 ## Running jenkins in docker
+
+```bash
+docker build -t jenkins-docker-tools:lts -f Dockerfile.controller .
+```
+
 ```bash
 docker run -d \
   -p 8080:8080 -p 50000:50000 \
   -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --group-add 999 \
   --name jenkins \
   jenkins/jenkins:lts
 ```

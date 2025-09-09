@@ -8,10 +8,13 @@ pipeline {
 
     environment {
         AWS_ACCOUNT_ID = '864899858037'
-        AWS_REGION = 'us-east-1'
-        APP_NAME = '2048-game'
-        AWS_CREDENTIALS = credentials('aws-creds')
+        AWS_REGION     = 'us-east-1'
+        APP_NAME       = '2048-game'
+        // Export credentials as env vars usable by aws cli
+        AWS_ACCESS_KEY_ID     = credentials('aws-creds-aws-access-key-id')
+        AWS_SECRET_ACCESS_KEY = credentials('aws-creds-aws-secret-access-key')
     }
+
     stages {
 
         stage('Checkout') {
@@ -47,8 +50,6 @@ pipeline {
             }
         }
 
-
-        
         stage('Build Docker Image') {
             steps {
                 sh 'docker build -t $APP_NAME .'
@@ -58,8 +59,8 @@ pipeline {
         stage('Authenticate to ECR') {
             steps {
                 sh """
-                    aws ecr get-login-password --region $AWS_REGION \
-                        | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                aws ecr get-login-password --region $AWS_REGION \
+                  | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 """
             }
         }
@@ -73,7 +74,10 @@ pipeline {
             }
         }
 
-        stage ('Terraform init && Terraform apply') {
+        stage ('Terraform init && apply') {
+            when {
+                expression { fileExists('terraform') }
+            }
             steps {
                 dir('terraform') {
                     sh """
@@ -87,28 +91,30 @@ pipeline {
             }
         }
 
-
         stage('Smoke test') {
+            when {
+                expression { fileExists('terraform') }
+            }
             steps {
                 dir('terraform') {
                     script {
-                        def_alb_dns = sh(script: "terraform output -raw -alb_dns_name", returnStdout: true).trim()
-                        sh "curl -I http://$alb_dns"
+                        def alb_dns = sh(script: "terraform output -raw alb_dns_name", returnStdout: true).trim()
+                        sh "curl -I http://${alb_dns}"
                     }
                 }
             }
         }
     }
-}
 
-post {
-    always {
-        echo "Pipeline finished!"
-    }
-    success {
-        echo 'Deployment successful!'
-    }
-    failure {
-        echo 'Deployment failed!'
+    post {
+        always {
+            echo "Pipeline finished!"
+        }
+        success {
+            echo 'Deployment successful!'
+        }
+        failure {
+            echo 'Deployment failed!'
+        }
     }
 }

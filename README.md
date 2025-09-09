@@ -95,18 +95,21 @@ Included stages:
 
 ## Running jenkins in docker
 
-```bash
-docker build -t jenkins-docker-tools:lts -f Dockerfile.controller .
-```
 
+Build both images:
+# Controller
+docker build -t jenkins-controller:latest -f Dockerfile.controller .
+
+# Agent
+docker build -t jenkins-agent-tools:latest -f Dockerfile.agent .
+
+# Run Jenkins controller
 ```bash
 docker run -d \
-  -p 8080:8080 -p 50000:50000 \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  --name jenkins-controller \
   -v jenkins_home:/var/jenkins_home \
   -v /var/run/docker.sock:/var/run/docker.sock \
-  --group-add 999 \
-  --name jenkins \
-  jenkins/jenkins:lts
+  jenkins-controller:latest
 ```
-
-

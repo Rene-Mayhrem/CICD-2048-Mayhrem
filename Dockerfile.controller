@@ -21,4 +21,9 @@ RUN apt-get update && \
     apt-get install -y terraform && \
     rm -rf /var/lib/apt/lists/*
 
+# Add jenkins user to docker group
+RUN groupadd -g 999 docker || true
+RUN usermod -aG docker jenkins
+
+
 USER jenkins

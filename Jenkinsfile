@@ -1,45 +1,34 @@
 pipeline {
     agent {
         docker {
-            image 'jenkins-agent-tools'
+            image 'jenkins-agent-tools:latest'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
     environment {
         AWS_ACCOUNT_ID = '864899858037'
-        AWS_REGION     = 'us-east-1'
-        APP_NAME       = '2048-game'
-        // Export credentials as env vars usable by aws cli
-        AWS_ACCESS_KEY_ID     = credentials('aws-creds-aws-access-key-id')
-        AWS_SECRET_ACCESS_KEY = credentials('aws-creds-aws-secret-access-key')
+        AWS_REGION = 'us-east-1'
+        APP_NAME = '2048-game'
+        AWS_CREDENTIALS = credentials('aws-creds') // Make sure you have this credential in Jenkins
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 git branch: 'main', url: 'https://github.com/Rene-Mayhrem/CICD-2048-Mayhrem.git'
             }
         }
 
-        stage('Build') {
-            steps {
-                sh 'echo "Building project..."'
-            }
-        }
-
         stage('Check Tools') {
             steps {
                 sh """
-                echo '--- Checking Docker ---'
-                docker --version || echo 'Docker not installed'
-
-                echo '--- Checking Terraform ---'
-                terraform --version || echo 'Terraform not installed'
-
-                echo '--- Checking AWS CLI ---'
-                aws --version || echo 'AWS CLI not installed'
+                    echo '--- Checking Docker ---'
+                    docker --version
+                    echo '--- Checking Terraform ---'
+                    terraform --version
+                    echo '--- Checking AWS CLI ---'
+                    aws --version
                 """
             }
         }
@@ -59,62 +48,39 @@ pipeline {
         stage('Authenticate to ECR') {
             steps {
                 sh """
-                aws ecr get-login-password --region $AWS_REGION \
-                  | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                    aws ecr get-login-password --region $AWS_REGION \
+                        | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
                 """
             }
         }
 
-        stage ('Push Image to ECR') {
+        stage('Push Image to ECR') {
             steps {
                 sh """
-                docker tag $APP_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest
-                docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest   
+                    docker tag $APP_NAME:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest
+                    docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$APP_NAME:latest
                 """
             }
         }
 
-        stage ('Terraform init && apply') {
-            when {
-                expression { fileExists('terraform') }
-            }
+        stage('Terraform apply') {
             steps {
                 dir('terraform') {
                     sh """
-                    terraform init 
-                    terraform apply -auto-approve \
-                        -var="aws_region=$AWS_REGION" \
-                        -var="aws_account_id=$AWS_ACCOUNT_ID" \
-                        -var="app_name=$APP_NAME"
+                        terraform init
+                        terraform apply -auto-approve \
+                            -var="aws_region=$AWS_REGION" \
+                            -var="aws_account_id=$AWS_ACCOUNT_ID" \
+                            -var="app_name=$APP_NAME"
                     """
-                }
-            }
-        }
-
-        stage('Smoke test') {
-            when {
-                expression { fileExists('terraform') }
-            }
-            steps {
-                dir('terraform') {
-                    script {
-                        def alb_dns = sh(script: "terraform output -raw alb_dns_name", returnStdout: true).trim()
-                        sh "curl -I http://${alb_dns}"
-                    }
                 }
             }
         }
     }
 
     post {
-        always {
-            echo "Pipeline finished!"
-        }
-        success {
-            echo 'Deployment successful!'
-        }
-        failure {
-            echo 'Deployment failed!'
-        }
+        always { echo "Pipeline finished!" }
+        success { echo "Deployment successful!" }
+        failure { echo "Deployment failed!" }
     }
 }

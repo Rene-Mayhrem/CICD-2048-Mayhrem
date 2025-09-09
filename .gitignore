@@ -56,3 +56,4 @@ jobs/**/*workspace
 !/terraform/
 !/Jenkinsfile
 !/jenkins-agent
+!/Dockerfile.controller

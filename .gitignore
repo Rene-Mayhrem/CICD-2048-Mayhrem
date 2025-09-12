@@ -52,8 +52,6 @@ jobs/**/*workspace
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 !/2048-in-react
-!/Dockerfile
+!/Dockerfile*
 !/terraform/
 !/Jenkinsfile
-!/jenkins-agent
-!/Dockerfile.controller

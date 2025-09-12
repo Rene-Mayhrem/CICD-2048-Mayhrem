@@ -1,8 +1,8 @@
 pipeline {
     agent {
         docker {
-            image 'jenkins-agent:latest'
-            args '-v /var/run/docker.sock:/var/run/docker.sock --user root'
+            image 'cicd-2048-mayhrem-agent '
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 

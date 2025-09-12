@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'cicd-2048-mayhrem-agent '
+            image 'cicd-2048-mayhrem-agent:latest'
             args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
